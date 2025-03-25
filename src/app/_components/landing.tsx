@@ -65,7 +65,7 @@ export default function Landing() {
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="bg-gradient-to-r from-violet-500 to-indigo-600 bg-clip-text font-semibold text-transparent text-xl">
-                FoodFinder
+                Mat
               </span>
             </div>
             <div className="flex items-center gap-2">
