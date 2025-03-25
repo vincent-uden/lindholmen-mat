@@ -61,9 +61,10 @@ export const menuRouter = createTRPCRouter({
         .where(
           and(gte(meals.servedOn, startOfDay), lt(meals.servedOn, endOfDay)),
         );
-      console.log(result);
       console.log(startOfDay, endOfDay);
+      console.log(result.length);
       if (result.length === 0) {
+        console.log("Fetching new meals");
         fetchMealsOfTheWeek(ctx.db);
         result = await ctx.db
           .select({
