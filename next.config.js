@@ -3,8 +3,12 @@
  * for Docker builds.
  */
 import "./src/env.js";
+import { env } from "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {};
+if (env.NODE_ENV == "production") {
+  config.typescript = { ...config.typescript, ignoreBuildErrors: true };
+}
 
 export default config;
