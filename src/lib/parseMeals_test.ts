@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test";
 
 import kooperativetHtml from "./kooperatiet.html" with { type: "text" };
-import { parseKooperativetMenuDays } from "./parseMeals";
+import worldoffoodRss from "./worldoffood.html" with { type: "text" };
+import { parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
 import type { MenuDay } from "./types";
 
 test("kooperativet html parsing", () => {
@@ -232,6 +233,131 @@ test("kooperativet html parsing", () => {
         {
           category: "VÄRLDEN",
           name: "Kooperativets Langos på surdeg med crèmefraiche toppad med räkor, västerbottenost, picklad rödlök, spenat & aioli",
+        },
+      ],
+    },
+  ];
+
+  expect(output).toEqual(expectedOutput);
+});
+
+test("World Of Food html parsing", () => {
+  let output = parseWorldOfFoodRSS(worldoffoodRss);
+  let expectedOutput = [
+    {
+      date: new Date("2025-03-24T00:00:00.000Z"),
+      meals: [
+        {
+          category: "Earth",
+          name: "Vreta gulärt, ärthummus, picklad silverlök, mejram och ostskum, persilja & stekt svamp Yellow peas, pea hummus, pickled silver onion, marjoram and cheese foam, parsley & fried mushrooms",
+        },
+        {
+          category: "Metal",
+          name: "Grillad fläskhöft, krämig polenta, blekselleri & tomatsalsa, libbsticka, fetaost & steksky Grilled pork loin, creamy polenta, celery & tomato salsa, lovage, feta cheese & dripping",
+        },
+        {
+          category: "Water",
+          name: "Bakad fisk, potatispuré med purjolök, sauce au café de paris, zucchinisallad & persilja Baked fish, potato puré with leek, sauce au café de paris, zucchini salad & parsley",
+        },
+        {
+          category: "Fire",
+          name: "Bakat kycklinglår, ”tom kha gai” ris, champinjon, zucchini, koriander, mynta & grön chili Baked chicken thigh, “tom kha gai” rice, mushroom, zucchini, cilantro, mint & green chili",
+        },
+      ],
+    },
+    {
+      date: new Date("2025-03-25T00:00:00.000Z"),
+      meals: [
+        {
+          category: "Earth",
+          name: "Vreta gulärt, ärthummus, picklad silverlök, mejram och ostskum, persilja & stekt svamp Yellow peas, pea hummus, pickled silver onion, marjoram and cheese foam, parsley & fried mushrooms",
+        },
+        {
+          category: "Metal",
+          name: "Grillad fläskhöft, krämig polenta, blekselleri & tomatsalsa, libbsticka, fetaost & steksky Grilled pork loin, creamy polenta, celery & tomato salsa, lovage, feta cheese & dripping",
+        },
+        {
+          category: "Water",
+          name: "Bakad fisk, potatispuré med purjolök, sauce au café de paris, zucchinisallad & persilja Baked fish, potato puré with leek, sauce au café de paris, zucchini salad & parsley",
+        },
+        {
+          category: "Fire",
+          name: "Bakat kycklinglår, ”tom kha gai” ris, champinjon, zucchini, koriander, mynta & grön chili Baked chicken thigh, “tom kha gai” rice, mushroom, zucchini, cilantro, mint & green chili",
+        },
+      ],
+    },
+    {
+      date: new Date("2025-03-26T00:00:00.000Z"),
+      meals: [
+        {
+          category: "Earth",
+          name: "Friterade potatis- och halloumibollar, ostkräm med picklad jalapeno, currypickles, grillad gemsallad & riven parmesan Fried potato- & halloumi balls, cheese cremé with pickled jalapeno, curry pickles, grilled gem lettuce & grated parmesan",
+        },
+        {
+          category: "Metal",
+          name: "Grillad fläskhöft, krämig polenta, blekselleri & tomatsalsa, libbsticka, fetaost & steksky Grilled pork loin, creamy polenta, celery & tomato salsa, lovage, feta cheese & dripping",
+        },
+        {
+          category: "Water",
+          name: "Bakad fisk, potatispuré med purjolök, sauce au café de paris, zucchinisallad & persilja Baked fish, potato puré with leek, sauce au café de paris, zucchini salad & parsley",
+        },
+        {
+          category: "Fire",
+          name: "Grillat kycklinglår, ris, jordnötssås, strimlad morot, fisksås, friterad vårrulledegkrisp, koriander & mynta  Grilled chicken thigh, rice, peanut sauce, grated carrot, fish sauce, fried spring roll dough crisp, cilantro & mint",
+        },
+        {
+          category: "Wood",
+          name: "Svart ris, rödkål, morot, grön currymajo, bönbiff & koriander  Black rice, red cabbage, carrot, green curry mayo, bean patty and cilantro",
+        },
+      ],
+    },
+    {
+      date: new Date("2025-03-27T00:00:00.000Z"),
+      meals: [
+        {
+          category: "Earth",
+          name: "Friterade potatis- och halloumibollar, ostkräm med picklad jalapeno, currypickles, grillad gemsallad & riven parmesan Fried potato- & halloumi balls, cheese cremé with pickled jalapeno, curry pickles, grilled gem lettuce & grated parmesan",
+        },
+        {
+          category: "Metal",
+          name: "Rostad fläsksida, stuvad vitkål, rostad potatis,  sviskonchutney & persilja Roasted pork belly, stewed white cabbage, roasted potatoes, prune chutney & parsley",
+        },
+        {
+          category: "Water",
+          name: "Fisktaco, friterad fisk, tortillabröd, pico de gallo, koriander, mango och habaneromajonnäs & strimlad sallad Fish taco, fried fish, tortilla bread, pico de gallo, cilantro, mango and habanero mayo and shredded lettuce",
+        },
+        {
+          category: "Fire",
+          name: "Grillat kycklinglår, ris, jordnötssås, strimlad morot, fisksås, friterad vårrulledegkrisp, koriander & mynta  Grilled chicken thigh, rice, peanut sauce, grated carrot, fish sauce, fried spring roll dough crisp, cilantro & mint",
+        },
+        {
+          category: "Wood",
+          name: "Svart ris, rödkål, morot, grön currymajo, bönbiff & koriander  Black rice, red cabbage, carrot, green curry mayo, bean patty and cilantro",
+        },
+      ],
+    },
+    {
+      date: new Date("2025-03-28T00:00:00.000Z"),
+      meals: [
+        {
+          category: "Earth",
+          name: "Friterade potatis- och halloumibollar, ostkräm med picklad jalapeno, currypickles, grillad gemsallad & riven parmesan Fried potato- & halloumi balls, cheese cremé with pickled jalapeno, curry pickles, grilled gem lettuce & grated parmesan",
+        },
+        {
+          category: "Metal",
+          name: "Rostad fläsksida, stuvad vitkål, rostad potatis,  sviskonchutney & persilja Roasted pork belly, stewed white cabbage, roasted potatoes, prune chutney & parsley",
+        },
+        {
+          category: "Water",
+          name: "Fisktaco, friterad fisk, tortillabröd, pico de gallo, koriander, mango och habaneromajonnäs & strimlad sallad Fish taco, fried fish, tortilla bread, pico de gallo, cilantro, mango and habanero mayo and shredded lettuce",
+        },
+        {
+          category: "Fire",
+          name: "Grillat kycklinglår, ris, jordnötssås, strimlad morot, fisksås, friterad vårrulledegkrisp, koriander & mynta  Grilled chicken thigh, rice, peanut sauce, grated carrot, fish sauce, fried spring roll dough crisp, cilantro & mint",
+        },
+        {
+          category: "Wood",
+          name: "Svart ris, rödkål, morot, grön currymajo, bönbiff & koriander  Black rice, red cabbage, carrot, green curry mayo, bean patty and cilantro",
         },
       ],
     },
