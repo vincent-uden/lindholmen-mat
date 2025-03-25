@@ -27,3 +27,33 @@ export const posts = createTable(
   }),
   (t) => [index("name_idx").on(t.name)],
 );
+
+export const restaurants = createTable("restaurant", (d) => ({
+  id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+  name: d.text({ length: 256 }),
+  createdAt: d
+    .integer({ mode: "timestamp" })
+    .default(sql`(unixepoch())`)
+    .notNull(),
+  updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+}));
+
+export const meals = createTable(
+  "meal",
+  (d) => ({
+    id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+    name: d.text({ length: 512 }),
+    createdAt: d
+      .integer({ mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+    updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+    servedOn: d
+      .integer({ mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+    category: d.text({ length: 256 }),
+    restaurantId: d.integer({ mode: "number" }).notNull(),
+  }),
+  (t) => [index("served_idx").on(t.servedOn)],
+);
