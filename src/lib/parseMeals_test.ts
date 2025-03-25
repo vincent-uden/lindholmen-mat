@@ -1,12 +1,11 @@
 import { expect, test } from "bun:test";
-import { read } from "fs";
 
 import kooperativetHtml from "./kooperatiet.html" with { type: "text" };
-import { parseMenuDays } from "./parseMeals";
+import { parseKooperativetMenuDays } from "./parseMeals";
 import type { MenuDay } from "./types";
 
 test("kooperativet html parsing", () => {
-  let output = parseMenuDays(
+  let output = parseKooperativetMenuDays(
     kooperativetHtml,
     new Date("2025-03-25T00:00:00.000Z"),
   );

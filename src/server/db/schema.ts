@@ -30,7 +30,7 @@ export const posts = createTable(
 
 export const restaurants = createTable("restaurant", (d) => ({
   id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-  name: d.text({ length: 256 }),
+  name: d.text({ length: 256 }).notNull(),
   createdAt: d
     .integer({ mode: "timestamp" })
     .default(sql`(unixepoch())`)
@@ -42,7 +42,7 @@ export const meals = createTable(
   "meal",
   (d) => ({
     id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-    name: d.text({ length: 512 }),
+    name: d.text({ length: 512 }).notNull(),
     createdAt: d
       .integer({ mode: "timestamp" })
       .default(sql`(unixepoch())`)
@@ -52,7 +52,7 @@ export const meals = createTable(
       .integer({ mode: "timestamp" })
       .default(sql`(unixepoch())`)
       .notNull(),
-    category: d.text({ length: 256 }),
+    category: d.text({ length: 256 }).notNull(),
     restaurantId: d.integer({ mode: "number" }).notNull(),
   }),
   (t) => [index("served_idx").on(t.servedOn)],

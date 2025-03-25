@@ -1,4 +1,5 @@
 import type { Meal, MenuDay } from "./types";
+import jsdom from "jsdom";
 
 /**
  * Given a date, return a new Date set to the Monday of that week.
@@ -17,7 +18,10 @@ function getMonday(d: Date): Date {
  * The weekday sections are identified by ids "monday", "tuesday", ..., "friday".
  * The date for each day is computed for the current week.
  */
-export function parseMenuDays(html: string, startDate: Date | null): MenuDay[] {
+export function parseKooperativetMenuDays(
+  html: string,
+  startDate: Date | null,
+): MenuDay[] {
   if (startDate == null) {
     startDate = new Date();
   }
@@ -31,7 +35,8 @@ export function parseMenuDays(html: string, startDate: Date | null): MenuDay[] {
     weekdayDates[day] = date;
   });
 
-  const parser = new DOMParser();
+  const dom = new jsdom.JSDOM();
+  const parser = new dom.window.DOMParser();
   const doc = parser.parseFromString(html, "text/html");
 
   const menuDays: MenuDay[] = [];

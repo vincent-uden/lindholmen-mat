@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   DropdownMenu,
@@ -15,42 +15,47 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Separator } from "~/components/ui/separator";
 import { sampleRestaurants } from "~/lib/sample-data";
+import type { GroupedRestaurant, MenuDay } from "~/lib/types";
+import { api } from "~/trpc/react";
 
 export default function Landing() {
   // Theme
   const { theme, setTheme } = useTheme();
 
-  // Get all unique dates across all restaurants
-  const allDates = getAllDates(sampleRestaurants);
 
+  // Get all unique dates across all restaurants
+  const allDates = getWeekdaysOfCurrentWeek();
   // Date state - only one date at a time
   const [selectedDate, setSelectedDate] = useState(
     allDates[0]?.toISOString() || "",
   );
+  const meals = api.menu.menuForDay.useQuery({ date: new Date(selectedDate) });
 
-  // Get restaurants with menus for the selected date
-  const restaurantsWithMenus = sampleRestaurants
-    .map((restaurant) => {
-      // Find the menu day that matches the selected date
-      const menuDay = restaurant.days.find(
-        (day) =>
-          day.date.toISOString().split("T")[0] ===
-          new Date(selectedDate).toISOString().split("T")[0],
-      );
+  let restaurantsWithMenus: { name: string, menuDay: MenuDay }[] = [];
+  if (meals.data != undefined) {
+    restaurantsWithMenus = meals.data
+      .map((restaurant: GroupedRestaurant) => {
+        // Find the menu day that matches the selected date
+        const menuDay = restaurant.days.find(
+          (day) =>
+            day.date.toISOString().split("T")[0] ===
+            new Date(selectedDate).toISOString().split("T")[0],
+        );
 
-      // If this restaurant doesn't have a menu for the selected date, return null
-      if (!menuDay) return null;
+        // If this restaurant doesn't have a menu for the selected date, return null
+        if (!menuDay) return null;
 
-      // Return restaurant with meals for the selected date
-      return {
-        ...restaurant,
-        menuDay: { ...menuDay },
-      };
-    })
-    .filter((restaurant) => restaurant !== null) as Array<{
-    name: string;
-    menuDay: (typeof sampleRestaurants)[0]["days"][0];
-  }>;
+        // Return restaurant with meals for the selected date
+        return {
+          name: restaurant.restaurantName,
+          menuDay: { ...menuDay },
+        };
+      })
+      .filter((restaurant) => restaurant !== null) as Array<{
+        name: string;
+        menuDay: MenuDay;
+      }>
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -127,11 +132,10 @@ export default function Landing() {
                   selectedDate === date.toISOString() ? "default" : "outline"
                 }
                 size="sm"
-                className={`h-9 shrink-0 ${
-                  selectedDate === date.toISOString()
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                    : "bg-white dark:bg-gray-950"
-                }`}
+                className={`h-9 shrink-0 ${selectedDate === date.toISOString()
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                  : "bg-white dark:bg-gray-950"
+                  }`}
                 onClick={() => setSelectedDate(date.toISOString())}
               >
                 <span className="font-medium">{format(date, "EEE")}</span>
@@ -225,4 +229,29 @@ function getAllDates(restaurants: typeof sampleRestaurants): Date[] {
   return Array.from(allDatesSet)
     .map((dateStr) => new Date(dateStr))
     .sort((a, b) => a.getTime() - b.getTime());
+}
+/**
+ * Returns Date objects for Monday through Friday of the current week.
+ */
+function getWeekdaysOfCurrentWeek(): Date[] {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  // Calculate how many days to subtract/add to get Monday.
+  // If today is Sunday (0), then we want the following Monday (i.e. diff = 1).
+  const diffToMonday = dayOfWeek === 0 ? 1 : 1 - dayOfWeek;
+
+  // Get Monday of the current week.
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(today.getDate() + diffToMonday);
+
+  // Create an array of Date objects for Monday to Friday.
+  const weekdays: Date[] = [];
+  for (let i = 0; i < 5; i++) {
+    const day = new Date(monday);
+    day.setDate(monday.getDate() + i);
+    weekdays.push(day);
+  }
+
+  return weekdays;
 }
