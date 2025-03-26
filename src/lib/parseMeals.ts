@@ -2,15 +2,22 @@ import type { Meal, MenuDay } from "./types";
 import jsdom from "jsdom";
 
 /**
- * Given a date, return a new Date set to the Monday of that week.
+ * Returns the Unix timestamp (in milliseconds) for 00:01 on Monday (the start
+ * of the week) in the given time zone, relative to the week of the provided date.
+ *
+ * @param {Date} date - The input date.
+ * @param {string} timeZone - An IANA time zone name (e.g., "America/New_York").
+ * @returns {number} - Timestamp in milliseconds.
  */
-function getMonday(d: Date): Date {
-  const date = new Date(d);
-  const day = date.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + diff);
-  date.setHours(0, 0, 0, 0);
-  return date;
+function getMonday(date: Date, timeZone: string) {
+  const localDate = new Date(
+    date.toLocaleString("en-US", { timeZone: timeZone }),
+  );
+  let weekday = localDate.getDay();
+  weekday = weekday === 0 ? 7 : weekday;
+  localDate.setDate(localDate.getDate() - (weekday - 1));
+  localDate.setHours(0, 1, 0, 0);
+  return localDate;
 }
 
 /**
@@ -25,7 +32,8 @@ export function parseKooperativetMenuDays(
   if (startDate == null) {
     startDate = new Date();
   }
-  const monday = getMonday(startDate);
+  const monday = getMonday(startDate, "Europe/Stockholm");
+  console.log("Monday ", monday);
 
   const weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday"];
   const weekdayDates: { [key: string]: Date } = {};

@@ -33,13 +33,17 @@ export default function Landing() {
 
   let restaurantsWithMenus: { name: string, menuDay: MenuDay }[] = [];
   if (meals.data != undefined) {
+    const selected = new Date(selectedDate);
     restaurantsWithMenus = meals.data
       .map((restaurant: GroupedRestaurant) => {
         // Find the menu day that matches the selected date
         const menuDay = restaurant.days.find(
-          (day) =>
-            day.date.toISOString().split("T")[0] ===
-            new Date(selectedDate).toISOString().split("T")[0],
+          (day) => {
+            console.log(day.date, selected, selectedDate);
+            return day.date.getFullYear() === selected.getFullYear() &&
+              day.date.getMonth() === selected.getMonth() &&
+              day.date.getDate() === selected.getDate();
+          }
         );
 
         // If this restaurant doesn't have a menu for the selected date, return null

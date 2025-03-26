@@ -101,7 +101,9 @@ function groupMealsByRestaurant(results: ResultRecord[]): GroupedRestaurant[] {
 
     // Convert servedOn date to an ISO date string (YYYY-MM-DD) to group meals by day.
     const servedOn = record.meal.servedOn;
-    const dateKey = servedOn.toISOString().split("T")[0]!; // "YYYY-MM-DD"
+    const dateKey = servedOn
+      .toLocaleString("en-US", { timeZone: "Europe/Stockholm" })
+      .split("T")[0]!; // "YYYY-MM-DD"
     let menuDay = restaurantData.daysMap.get(dateKey);
 
     if (!menuDay) {
