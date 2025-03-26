@@ -73,6 +73,8 @@ export const menuRouter = createTRPCRouter({
       }
 
       let grouped = groupMealsByRestaurant(result);
+      console.log(result);
+      console.log(grouped);
       return grouped;
     }),
 });
