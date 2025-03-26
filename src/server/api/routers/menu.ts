@@ -37,17 +37,10 @@ export const menuRouter = createTRPCRouter({
   menuForDay: publicProcedure
     .input(z.object({ date: z.date() }))
     .query(async ({ ctx, input }) => {
-      const startOfDay = new Date(
-        input.date.getFullYear(),
-        input.date.getMonth(),
-        input.date.getDate(),
-      );
-
-      const endOfDay = new Date(
-        input.date.getFullYear(),
-        input.date.getMonth(),
-        input.date.getDate(),
-      );
+      // The server might be on a different timezone, thus we respect the front
+      // ends definition of start and end of a day
+      const startOfDay = input.date;
+      const endOfDay = new Date(input.date);
       endOfDay.setDate(endOfDay.getDate() + 1);
 
       let result = await ctx.db

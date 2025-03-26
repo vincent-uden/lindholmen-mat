@@ -25,6 +25,7 @@ export default function Landing() {
 
   // Get all unique dates across all restaurants
   const allDates = getWeekdaysOfCurrentWeek();
+  console.log(allDates);
   // Date state - only one date at a time
   const [selectedDate, setSelectedDate] = useState(
     allDates[0]?.toISOString() || "",
