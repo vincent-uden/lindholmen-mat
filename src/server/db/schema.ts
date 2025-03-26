@@ -2,7 +2,7 @@
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
 import { sql } from "drizzle-orm";
-import { index, sqliteTableCreator } from "drizzle-orm/sqlite-core";
+import { index, sqliteTableCreator, unique } from "drizzle-orm/sqlite-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -55,5 +55,13 @@ export const meals = createTable(
     category: d.text({ length: 256 }).notNull(),
     restaurantId: d.integer({ mode: "number" }).notNull(),
   }),
-  (t) => [index("served_idx").on(t.servedOn)],
+  (t) => [
+    index("served_idx").on(t.servedOn),
+    unique("meals_custom_unique").on(
+      t.name,
+      t.category,
+      t.servedOn,
+      t.restaurantId,
+    ),
+  ],
 );
