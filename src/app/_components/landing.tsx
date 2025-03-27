@@ -18,6 +18,9 @@ import { sampleRestaurants } from "~/lib/sample-data";
 import type { GroupedRestaurant, MenuDay } from "~/lib/types";
 import { api } from "~/trpc/react";
 
+const initialDate = new Date();
+initialDate.setHours(0, 0, 0, 0);
+
 export default function Landing() {
   // Theme
   const { theme, setTheme } = useTheme();
@@ -27,7 +30,7 @@ export default function Landing() {
   const allDates = getWeekdaysOfCurrentWeek();
   // Date state - only one date at a time
   const [selectedDate, setSelectedDate] = useState(
-    allDates[0]?.toISOString() || "",
+    initialDate.toISOString() || "",
   );
   const meals = api.menu.menuForDay.useQuery({ date: new Date(selectedDate) });
 
