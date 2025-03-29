@@ -1,5 +1,6 @@
 import { and, eq, gte, lt } from "drizzle-orm";
 import { z } from "zod";
+import { env } from "~/env";
 import { fetchMealsOfTheWeek } from "~/lib/fetchMeals";
 import type {
   GroupedRestaurant,
@@ -7,9 +8,25 @@ import type {
   MenuDay,
   ResultRecord,
 } from "~/lib/types";
+import Groq from "groq-sdk";
 
 import { createTRPCRouter, publicProcedure } from "~/server/api/trpc";
 import { meals, posts, restaurants } from "~/server/db/schema";
+import type { ChatCompletionMessageParam } from "groq-sdk/resources/chat/completions.mjs";
+
+export const recommendationSchema = z.object({
+  name: z.string(),
+  tastyness: z.number().min(1).max(10),
+  confidenceScore: z.number().min(0).max(1),
+});
+
+export type MealRecommendation = z.infer<typeof recommendationSchema>;
+
+export const llmResponseSchema = z.object({
+  recommendations: z.array(recommendationSchema),
+});
+
+export type MenuRecommendation = z.infer<typeof llmResponseSchema>;
 
 export const menuRouter = createTRPCRouter({
   hello: publicProcedure
@@ -54,10 +71,7 @@ export const menuRouter = createTRPCRouter({
         .where(
           and(gte(meals.servedOn, startOfDay), lt(meals.servedOn, endOfDay)),
         );
-      console.log(startOfDay, endOfDay);
-      console.log(result.length);
       if (result.length === 0) {
-        console.log("Fetching new meals");
         fetchMealsOfTheWeek(ctx.db);
         result = await ctx.db
           .select({
@@ -73,9 +87,62 @@ export const menuRouter = createTRPCRouter({
       }
 
       let grouped = groupMealsByRestaurant(result);
-      console.log(result);
-      console.log(grouped);
       return grouped;
+    }),
+  recommendations: publicProcedure
+    .input(
+      z.array(
+        z.object({
+          restaurantName: z.string().nullable(),
+          days: z.array(
+            z.object({
+              date: z.date(),
+              meals: z.array(
+                z.object({ category: z.string(), name: z.string() }),
+              ),
+            }),
+          ),
+        }),
+      ),
+    )
+    .query(async ({ ctx: _, input }) => {
+      if (input.length === 0) {
+        return { recommendations: [] };
+      }
+      let groq = new Groq({ apiKey: env.GROQ_API_KEY });
+      const model = "mistral-saba-24b";
+      const exampleResponse: MenuRecommendation = {
+        recommendations: [
+          {
+            name: "Högrevsburgare",
+            //@ts-ignore
+            tastyness: "number (0-10)",
+            //@ts-ignore
+            confidenceScore: "number (0-1)",
+          },
+        ],
+      };
+      let messages: ChatCompletionMessageParam[] = [
+        {
+          role: "system",
+          content: `You are a gastronomic expert recommending meals to a user from a list of available meals and the users preferences or taste. Rate ALL meals the user is MOST LIKELY to enjoy. You output the recommendations in JSON.\n The JSON object MUST adhere to the following example ${JSON.stringify(exampleResponse, null, 4)}`,
+        },
+        {
+          role: "user",
+          content: `Jag gillar generellt sett allting som är nattbakat, långkokt och på andra sätt mört. Jag föredrar nöt och fläsk över kyckling. Högrev är fantastiskt. Svensk husmanskost är också bra.\n Veckans tillgängliga rätter är: \n${formatMealsForLLM(input)}`,
+        },
+      ];
+      let chat_completion = (
+        await groq.chat.completions.create({
+          messages,
+          model,
+          temperature: 0,
+          stream: false,
+          response_format: { type: "json_object" },
+        })
+      ).choices[0]!;
+      let response_object = JSON.parse(chat_completion.message.content!);
+      return llmResponseSchema.parse(response_object);
     }),
 });
 
@@ -138,4 +205,16 @@ function groupMealsByRestaurant(results: ResultRecord[]): GroupedRestaurant[] {
   }
 
   return groupedRestaurants;
+}
+
+function formatMealsForLLM(groups: GroupedRestaurant[]) {
+  let output = "";
+  for (const group of groups) {
+    for (const day of group.days) {
+      for (const meal of day.meals) {
+        output += `${meal.name}\n`;
+      }
+    }
+  }
+  return output;
 }

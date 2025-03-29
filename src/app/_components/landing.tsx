@@ -17,9 +17,20 @@ import { Separator } from "~/components/ui/separator";
 import { sampleRestaurants } from "~/lib/sample-data";
 import type { GroupedRestaurant, MenuDay } from "~/lib/types";
 import { api } from "~/trpc/react";
+import Fuse from "fuse.js";
 
 const initialDate = new Date();
 initialDate.setHours(0, 0, 0, 0);
+
+// Check if today is Saturday (6) or Sunday (0)
+const dayOfWeek = initialDate.getDay();
+
+// If it's Saturday, subtract one day; if it's Sunday, subtract two days.
+if (dayOfWeek === 6) {
+  initialDate.setDate(initialDate.getDate() - 1);
+} else if (dayOfWeek === 0) {
+  initialDate.setDate(initialDate.getDate() - 2);
+}
 
 export default function Landing() {
   // Theme
@@ -33,6 +44,7 @@ export default function Landing() {
     initialDate.toISOString() || "",
   );
   const meals = api.menu.menuForDay.useQuery({ date: new Date(selectedDate) });
+  const recommendations = api.menu.recommendations.useQuery(meals.data ?? []);
 
   let restaurantsWithMenus: { name: string, menuDay: MenuDay }[] = [];
   if (meals.data != undefined) {
@@ -42,7 +54,6 @@ export default function Landing() {
         // Find the menu day that matches the selected date
         const menuDay = restaurant.days.find(
           (day) => {
-            console.log(day.date, selected, selectedDate);
             return day.date.getFullYear() === selected.getFullYear() &&
               day.date.getMonth() === selected.getMonth() &&
               day.date.getDate() === selected.getDate();
@@ -63,10 +74,7 @@ export default function Landing() {
         menuDay: MenuDay;
       }>
   }
-  useEffect(() => {
-    console.log(meals.data);
-    console.log(restaurantsWithMenus);
-  }, [meals]);
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -134,7 +142,7 @@ export default function Landing() {
         </div>
 
         {/* Date selector pills - simplified to only allow one selection */}
-        <div className="mb-6 overflow-x-auto pb-2">
+        <div className="overflow-x-auto pb-2">
           <div className="flex gap-2">
             {allDates.map((date) => (
               <Button
@@ -155,6 +163,12 @@ export default function Landing() {
             ))}
           </div>
         </div>
+
+        <div className="h-4" />
+        <p className="text-gray-500 text-sm dark:text-gray-400 italic">
+          <span className="text-green-500 dark:text-green-400">Green</span> outlines shows meals that are more likely to be of interest.
+        </p>
+        <div className="h-4" />
 
         {/* No results message */}
         {restaurantsWithMenus.length === 0 && (
@@ -195,14 +209,38 @@ export default function Landing() {
                         <div className="space-y-1">
                           {restaurant.menuDay.meals
                             .filter((meal) => meal.category === category)
-                            .map((meal, index) => (
-                              <div
-                                key={index}
-                                className="rounded-md bg-gray-50 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800"
-                              >
-                                {meal.name}
-                              </div>
-                            ))}
+                            .map((meal, index) => {
+                              const recommendationSearch = new Fuse(recommendations.data?.recommendations ?? [], {
+                                keys: ["name"],
+                                includeScore: true,
+                              });
+
+                              let matches = recommendationSearch.search(meal.name);
+                              let recommendationStyling = "";
+                              let label = "";
+                              if (matches.length > 0) {
+                                let r = matches[0]!;
+                                if ((r.score ?? 0.0) < 0.9) {
+                                  if (r.item.tastyness > 7) {
+                                    recommendationStyling += " border border-2 border-green-300 dark:border-green-700"
+                                  }
+                                  //label = `Tastyeness: ${r.item.tastyness} Confidence: ${r.item.confidenceScore}`;
+                                }
+                              }
+                              return (
+                                <div
+                                  key={index}
+                                  className={"rounded-md bg-gray-50 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800" + recommendationStyling}
+                                >
+                                  <p>
+                                    {meal.name}
+                                  </p>
+                                  <p>
+                                    {label}
+                                  </p>
+                                </div>
+                              );
+                            })}
                         </div>
                       </div>
                     ))}
