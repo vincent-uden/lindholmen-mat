@@ -305,3 +305,91 @@ export function parseBombayBistroMenuDays(html: string, startDate: Date | null):
   
   return menuDays;
 }
+
+/**
+ * Parses the District One menu from HTML.
+ * The menu is organized by weekdays (Måndag, Tisdag, etc.) with meal categories
+ * like Ramen, Fisk, Kött, etc. under each day.
+ */
+export function parseDistrictOneMenuDays(
+  html: string,
+  startDate: Date | null,
+): MenuDay[] {
+  if (startDate == null) {
+    startDate = new Date();
+  }
+  const monday = getMonday(startDate, "Europe/Stockholm");
+
+  const weekdays = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"];
+  const weekdayDates: { [key: string]: Date } = {};
+  weekdays.forEach((day, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    weekdayDates[day] = date;
+  });
+
+  const dom = new jsdom.JSDOM();
+  const parser = new dom.window.DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const menuDays: MenuDay[] = [];
+  
+  // Find all paragraphs in the document
+  const paragraphs = Array.from(doc.querySelectorAll("p"));
+  
+  let currentDay = "";
+  let currentCategory = "";
+  let currentMeals: Meal[] = [];
+  
+  for (let i = 0; i < paragraphs.length; i++) {
+    const p = paragraphs[i];
+    if (!p) continue;
+    
+    const text = p.textContent?.trim() || "";
+    
+    // Skip separator lines that contain only dots or dashes
+    if (/^[.\-]+$/.test(text)) continue;
+    
+    // Stop processing if we encounter footer content
+    if (text === "KONTAKTA OSS" || text === "ÖPPETTIDER") {
+      break;
+    }
+    
+    // Check if this is a day header
+    if (weekdays.includes(text)) {
+      // If we were processing a previous day, save it
+      if (currentDay && currentMeals.length > 0) {
+        menuDays.push({
+          date: weekdayDates[currentDay]!,
+          meals: [...currentMeals],
+        });
+        currentMeals = [];
+      }
+      
+      currentDay = text;
+      currentCategory = "";
+    } 
+    // Check if this is a category header (underlined text)
+    else if (p.querySelector("span[style*='text-decoration: underline']") || 
+             p.querySelector("span[style*='text-decoration-line: underline']")) {
+      currentCategory = text;
+    } 
+    // If we have a current day and category, this is a meal description
+    else if (currentDay && currentCategory && text) {
+      currentMeals.push({
+        category: currentCategory,
+        name: text,
+      });
+    }
+  }
+  
+  // Add the last day if it exists
+  if (currentDay && currentMeals.length > 0) {
+    menuDays.push({
+      date: weekdayDates[currentDay]!,
+      meals: [...currentMeals],
+    });
+  }
+  
+  return menuDays;
+}

@@ -1,6 +1,6 @@
 import type { LibSQLDatabase } from "drizzle-orm/libsql";
 import type { MenuDb } from "~/server/db";
-import { parseBombayBistroMenuDays, parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
+import { parseBombayBistroMenuDays, parseDistrictOneMenuDays, parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
 import type { MenuDay } from "./types";
 import { meals, restaurants } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -61,6 +61,25 @@ export async function fetchMealsOfTheWeek(db: MenuDb) {
       });
     }
   }
+  
+  let districtOneMenus = await fetchDistrictOneMeals();
+  let districtOne = (
+    await db
+      .select()
+      .from(restaurants)
+      .where(eq(restaurants.name, "District One"))
+      .limit(1)
+  )[0]!;
+  for (const menu of districtOneMenus) {
+    for (const meal of menu.meals) {
+      newMeals.push({
+        name: meal.name,
+        category: meal.category,
+        restaurantId: districtOne.id,
+        servedOn: menu.date,
+      });
+    }
+  }
 
   await db.insert(meals).values(newMeals);
 }
@@ -112,6 +131,21 @@ export async function fetchBombayBistroMeals(): Promise<MenuDay[]> {
   }
   const html = await response.text();
   const menuDays = parseBombayBistroMenuDays(html, new Date());
+  return menuDays;
+}
+
+export async function fetchDistrictOneMeals(): Promise<MenuDay[]> {
+  const url = "https://districtone.se/lunch.html";
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch page: ${response.status} ${response.statusText}`,
+    );
+  }
+  
+  const html = await response.text();
+  const menuDays = parseDistrictOneMenuDays(html, new Date());
   return menuDays;
 }
 

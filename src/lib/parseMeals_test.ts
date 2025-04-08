@@ -3,7 +3,8 @@ import { expect, test } from "bun:test";
 import kooperativetHtml from "./kooperatiet.html" with { type: "text" };
 import bombayBistroHtml from "./bombay.html" with { type: "text" };
 import worldoffoodRss from "./worldoffood.html" with { type: "text" };
-import { parseBombayBistroMenuDays, parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
+import districtOneHtml from "./districtone.html" with { type: "text" };
+import { parseBombayBistroMenuDays, parseDistrictOneMenuDays, parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
 import type { MenuDay } from "./types";
 
 test("kooperativet html parsing", () => {
@@ -442,5 +443,77 @@ test("Bombay Bistro html parsing", () => {
   ];
 
   expect(output).toEqual(expectedOutput);
+});
+
+test("district one html parsing", () => {
+  let output = parseDistrictOneMenuDays(
+    districtOneHtml,
+    new Date("2025-03-25T00:00:00.000Z")
+  );
+  
+  let expectedOutput: MenuDay[] = [
+    {
+      date: new Date("2025-03-24T00:01:00.000Z"),
+      meals: [
+        {
+          category: "Earth",
+          name: "Vreta gulärt, ärthummus, picklad silverlök, mejram och ostskum, persilja & stekt svamp Yellow peas, pea hummus, pickled silver onion, marjoram and cheese foam, parsley & fried mushrooms"
+        },
+        {
+          category: "Metal",
+          name: "Grillad fläskhöft, krämig polenta, blekselleri & tomatsalsa, libbsticka, fetaost & steksky Grilled pork loin, creamy polenta, celery & tomato salsa, lovage, feta cheese & dripping"
+        },
+        {
+          category: "Water",
+          name: "Bakad fisk, potatispuré med purjolök, sauce au café de paris, zucchinisallad & persilja Baked fish, potato puré with leek, sauce au café de paris, zucchini salad & parsley"
+        },
+        {
+          category: "Fire",
+          name: "Bakat kycklinglår, \"tom kha gai\" ris, champinjon, zucchini, koriander, mynta & grön chili Baked chicken thigh, \"tom kha gai\" rice, mushroom, zucchini, cilantro, mint & green chili"
+        }
+      ]
+    }
+  ];
+  
+  // Verify we have 5 days (Monday to Friday)
+  expect(output.length).toBe(5);
+  
+  // Check the first day (Monday)
+  expect(output[0].date).toEqual(new Date("2025-03-24T00:01:00.000Z"));
+  
+  // Check that we have meals for Monday
+  expect(output[0].meals.length).toBeGreaterThan(0);
+  
+  // Check that we have the expected categories
+  const mondayCategories = output[0].meals.map(meal => meal.category);
+  expect(mondayCategories).toContain("Ramen");
+  expect(mondayCategories).toContain("Fisk");
+  expect(mondayCategories).toContain("Kött");
+  expect(mondayCategories).toContain("Sallad");
+  
+  // Check that we have the expected meals
+  const mondayMeals = output[0].meals.map(meal => meal.name);
+  expect(mondayMeals.some(meal => meal.includes("Sidfläsk, kyckling"))).toBe(true);
+  expect(mondayMeals.some(meal => meal.includes("Pocherad torskfile"))).toBe(true);
+  expect(mondayMeals.some(meal => meal.includes("Boeuf bourguignon"))).toBe(true);
+  
+  // Check the last day (Friday)
+  expect(output[4].date).toEqual(new Date("2025-03-28T00:01:00.000Z"));
+  
+  // Check that we have meals for Friday
+  expect(output[4].meals.length).toBeGreaterThan(0);
+  
+  // Check that we have the expected categories for Friday
+  const fridayCategories = output[4].meals.map(meal => meal.category);
+  expect(fridayCategories).toContain("Ramen");
+  expect(fridayCategories).toContain("Fisk");
+  expect(fridayCategories).toContain("Kött");
+  expect(fridayCategories).toContain("Sallad");
+  
+  // Check that we have the expected meals for Friday
+  const fridayMeals = output[4].meals.map(meal => meal.name);
+  expect(fridayMeals.some(meal => meal.includes("Sidfläsk, kyckling"))).toBe(true);
+  expect(fridayMeals.some(meal => meal.includes("Skaldjuröverbakad torskfile"))).toBe(true);
+  expect(fridayMeals.some(meal => meal.includes("Nattbakad flankstek"))).toBe(true);
 });
 
