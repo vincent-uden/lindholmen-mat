@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
 
 import kooperativetHtml from "./kooperatiet.html" with { type: "text" };
+import bombayBistroHtml from "./bombay.html" with { type: "text" };
 import worldoffoodRss from "./worldoffood.html" with { type: "text" };
-import { parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
+import { parseBombayBistroMenuDays, parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
 import type { MenuDay } from "./types";
 
 test("kooperativet html parsing", () => {
@@ -12,7 +13,7 @@ test("kooperativet html parsing", () => {
   );
   let expectedOutput: MenuDay[] = [
     {
-      date: new Date("2025-03-24T00:00:00.000Z"),
+      date: new Date("2025-03-24T00:01:00.000Z"),
       meals: [
         {
           category: "SALLADER",
@@ -57,7 +58,7 @@ test("kooperativet html parsing", () => {
       ],
     },
     {
-      date: new Date("2025-03-25T00:00:00.000Z"),
+      date: new Date("2025-03-25T00:01:00.000Z"),
       meals: [
         {
           category: "SALLADER",
@@ -102,7 +103,7 @@ test("kooperativet html parsing", () => {
       ],
     },
     {
-      date: new Date("2025-03-26T00:00:00.000Z"),
+      date: new Date("2025-03-26T00:01:00.000Z"),
       meals: [
         {
           category: "SALLADER",
@@ -147,7 +148,7 @@ test("kooperativet html parsing", () => {
       ],
     },
     {
-      date: new Date("2025-03-27T00:00:00.000Z"),
+      date: new Date("2025-03-27T00:01:00.000Z"),
       meals: [
         {
           category: "SALLADER",
@@ -192,7 +193,7 @@ test("kooperativet html parsing", () => {
       ],
     },
     {
-      date: new Date("2025-03-28T00:00:00.000Z"),
+      date: new Date("2025-03-28T00:01:00.000Z"),
       meals: [
         {
           category: "SALLADER",
@@ -365,3 +366,81 @@ test("World Of Food html parsing", () => {
 
   expect(output).toEqual(expectedOutput);
 });
+
+
+
+test("Bombay Bistro html parsing", () => {
+  let output = parseBombayBistroMenuDays(bombayBistroHtml, 
+    new Date("2025-04-08T00:00:00.000Z"),
+  );
+  let expectedOutput = [
+    {
+      date: new Date("2025-04-07T00:01:00.000Z"),
+      meals: [
+        {
+          category: "Chicken Vindaloo",
+          name: "Kycklingryta med ursprung från Goa består av rödvin, kanel, röd chili, curryblad.",
+        },
+        {
+          category: "Lamm Korma",
+          name: "Lammköttgryta gjord av grädde tomat, kardemumma, rosvatten och smör.",
+        },
+      ],
+    },
+    {
+      date: new Date("2025-04-08T00:01:00.000Z"),
+      meals: [
+        {
+          category: "Hariyali Chicken",
+          name: "Kycklingfile i en örtsås som består av basilika, mynta, koriander, lök, grön chili och kokos.",
+        },
+        {
+          category: "Masaledar Beef",
+          name: "Kryddig oxköttgryta med lök, tomat, chili, nejlika, lime och koriander.",
+        },
+      ],
+    },
+    {
+      date: new Date("2025-04-09T00:01:00.000Z"),
+      meals: [
+        {
+          category: "Butter Chicken",
+          name: "Kycklinggryta i en aromatisk gräddsås som består av tomat, ost, cashewnötter och smör.",
+        },
+        {
+          category: "Balti Ghost",
+          name: "Lammkött marinerad i vitlök och grön chilli tillagad i en kryddstark rödvinsås, lök, paprika och champinjoner.",
+        },
+      ],
+    },
+    {
+      date: new Date("2025-04-10T00:01:00.000Z"),
+      meals: [
+        {
+          category: "Murgh Jhalfrezi",
+          name: "Kycklingfilé tillagad i söt och syrlig sås av tomat, rödlök, zucchini, paprika, fänkål och chili.",
+        },
+        {
+          category: "Beef Bombay Special",
+          name: "Oxköttgryta med en kryddstark gräddsås.",
+        },
+      ],
+    },
+    {
+      date: new Date("2025-04-11T00:01:00.000Z"),
+      meals: [
+        {
+          category: "Pahadi Grill Chicken",
+          name: "Grillad kycklingfilé marinerad i yoghurt och örter, serveras med tandoori sås.",
+        },
+        {
+          category: "Dalcha Ghost",
+          name: "Lammgryta med linser, lök, tomat, chili och limejuice.",
+        },
+      ],
+    },
+  ];
+
+  expect(output).toEqual(expectedOutput);
+});
+
