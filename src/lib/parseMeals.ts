@@ -33,7 +33,6 @@ export function parseKooperativetMenuDays(
     startDate = new Date();
   }
   const monday = getMonday(startDate, "Europe/Stockholm");
-  console.log("Monday ", monday);
 
   const weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday"];
   const weekdayDates: { [key: string]: Date } = {};
@@ -99,7 +98,7 @@ function parseDateString(dateStr: string): Date {
 }
 
 /**
- * Given an HTML string representing one item’s description,
+ * Given an HTML string representing one item's description,
  * extract an array of Meal objects.
  *
  * The HTML is assumed to contain one or more <p> elements.
@@ -181,5 +180,216 @@ export function parseWorldOfFoodRSS(xml: string): MenuDay[] {
     }
   });
 
+  return menuDays;
+}
+
+export function parseBombayBistroMenuDays(html: string, startDate: Date | null): MenuDay[] {
+  if (startDate == null) {
+    startDate = new Date();
+  }
+  const monday = getMonday(startDate, "Europe/Stockholm");
+
+  const weekdays = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"];
+  const weekdayDates: { [key: string]: Date } = {};
+  weekdays.forEach((day, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    weekdayDates[day] = date;
+  });
+
+  const dom = new jsdom.JSDOM();
+  const parser = new dom.window.DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  // Determine which week's menu to use based on the current week number
+  // This replicates the logic from the website's JavaScript
+  const getWeekNumber = (date: Date): number => {
+    const onejan = new Date(date.getFullYear(), 0, 4);
+    return Math.ceil((((date.getTime() - onejan.getTime()) / 86400000) + onejan.getDay() + 1) / 7);
+  };
+
+  const weekNumber = getWeekNumber(startDate);
+  let menuWeekNumber = 1;
+  
+  // Calculate which of the 4 menu weeks to use
+  let i = 1;
+  let count = 1;
+  while (i < 53) {
+    if (i === weekNumber) {
+      menuWeekNumber = count;
+      break;
+    }
+    if (i && (i % 4 === 0)) {
+      count = 0;
+    }
+    i++;
+    count++;
+  }
+
+  const menuSelector = `.vecka${menuWeekNumber}`;
+  const menuContainer = doc.querySelector(menuSelector);
+  
+  if (!menuContainer) {
+    console.warn(`Menu week ${menuWeekNumber} not found in HTML`);
+    return [];
+  }
+
+  const menuDays: MenuDay[] = [];
+  let currentDay = "";
+  let currentDayMeals: Meal[] = [];
+
+  const elements = menuContainer.querySelectorAll("h2, p");
+  
+  const dayHeaders = menuContainer.querySelectorAll("h2");
+  
+  const dayNameMap: Record<string, string> = {};
+  weekdays.forEach(day => {
+    // Normalize by removing diacritics and converting to lowercase
+    const normalized = day.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    dayNameMap[normalized] = day;
+  });
+  
+  elements.forEach((element) => {
+    const text = element.textContent?.trim() || "";
+    
+    // If it's an h2, it's a new day
+    if (element.tagName === "H2") {
+      if (currentDay && weekdayDates[currentDay] && currentDayMeals.length > 0) {
+        menuDays.push({
+          date: weekdayDates[currentDay]!,
+          meals: [...currentDayMeals]
+        });
+      }
+      
+      currentDay = text;
+      currentDayMeals = [];
+      
+      const normalizedText = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const matchedDay = weekdays.find(day => {
+        const normalizedDay = day.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        return normalizedText.includes(normalizedDay);
+      });
+      
+      if (matchedDay) {
+        currentDay = matchedDay;
+      } else {
+        currentDay = "";
+      }
+    } 
+    else if (currentDay && element.tagName === "P") {
+      const strongEl = element.querySelector("strong");
+      const emEl = element.querySelector("em");
+      
+      if (strongEl && emEl) {
+        const name = strongEl.textContent?.trim() || "";
+        const description = emEl.textContent?.trim() || "";
+        
+        // Skip meals that are in the "Andra alternativ" section
+        if (!name.includes("KR")) {
+          currentDayMeals.push({
+            category: name.split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" "),
+            name: description
+          });
+        }
+      }
+    }
+  });
+  
+  if (currentDay && weekdayDates[currentDay] && currentDayMeals.length > 0) {
+    menuDays.push({
+      date: weekdayDates[currentDay]!,
+      meals: [...currentDayMeals]
+    });
+  }
+
+  
+  return menuDays;
+}
+
+/**
+ * Parses the District One menu from HTML.
+ * The menu is organized by weekdays (Måndag, Tisdag, etc.) with meal categories
+ * like Ramen, Fisk, Kött, etc. under each day.
+ */
+export function parseDistrictOneMenuDays(
+  html: string,
+  startDate: Date | null,
+): MenuDay[] {
+  if (startDate == null) {
+    startDate = new Date();
+  }
+  const monday = getMonday(startDate, "Europe/Stockholm");
+
+  const weekdays = ["Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag"];
+  const weekdayDates: { [key: string]: Date } = {};
+  weekdays.forEach((day, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    weekdayDates[day] = date;
+  });
+
+  const dom = new jsdom.JSDOM();
+  const parser = new dom.window.DOMParser();
+  const doc = parser.parseFromString(html, "text/html");
+
+  const menuDays: MenuDay[] = [];
+  
+  // Find all paragraphs in the document
+  const paragraphs = Array.from(doc.querySelectorAll("p"));
+  
+  let currentDay = "";
+  let currentCategory = "";
+  let currentMeals: Meal[] = [];
+  
+  for (let i = 0; i < paragraphs.length; i++) {
+    const p = paragraphs[i];
+    if (!p) continue;
+    
+    const text = p.textContent?.trim() || "";
+    
+    // Skip separator lines that contain only dots or dashes
+    if (/^[.\-]+$/.test(text)) continue;
+    
+    // Stop processing if we encounter footer content
+    if (text === "KONTAKTA OSS" || text === "ÖPPETTIDER") {
+      break;
+    }
+    
+    // Check if this is a day header
+    if (weekdays.includes(text)) {
+      // If we were processing a previous day, save it
+      if (currentDay && currentMeals.length > 0) {
+        menuDays.push({
+          date: weekdayDates[currentDay]!,
+          meals: [...currentMeals],
+        });
+        currentMeals = [];
+      }
+      
+      currentDay = text;
+      currentCategory = "";
+    } 
+    // Check if this is a category header (underlined text)
+    else if (p.querySelector("span[style*='text-decoration: underline']") || 
+             p.querySelector("span[style*='text-decoration-line: underline']")) {
+      currentCategory = text;
+    } 
+    // If we have a current day and category, this is a meal description
+    else if (currentDay && currentCategory && text) {
+      currentMeals.push({
+        category: currentCategory,
+        name: text,
+      });
+    }
+  }
+  
+  // Add the last day if it exists
+  if (currentDay && currentMeals.length > 0) {
+    menuDays.push({
+      date: weekdayDates[currentDay]!,
+      meals: [...currentMeals],
+    });
+  }
+  
   return menuDays;
 }

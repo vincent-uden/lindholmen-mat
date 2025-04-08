@@ -1,6 +1,6 @@
 import type { LibSQLDatabase } from "drizzle-orm/libsql";
 import type { MenuDb } from "~/server/db";
-import { parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
+import { parseBombayBistroMenuDays, parseDistrictOneMenuDays, parseKooperativetMenuDays, parseWorldOfFoodRSS } from "./parseMeals";
 import type { MenuDay } from "./types";
 import { meals, restaurants } from "~/server/db/schema";
 import { eq } from "drizzle-orm";
@@ -39,6 +39,43 @@ export async function fetchMealsOfTheWeek(db: MenuDb) {
         name: meal.name,
         category: meal.category,
         restaurantId: worldOfFood.id,
+        servedOn: menu.date,
+      });
+    }
+  }
+  let bombayBistroMenus = await fetchBombayBistroMeals();
+  let bombayBistro = (
+    await db
+      .select()
+      .from(restaurants)
+      .where(eq(restaurants.name, "Bombay Bistro"))
+      .limit(1)
+  )[0]!;
+  for (const menu of bombayBistroMenus) {
+    for (const meal of menu.meals) {
+      newMeals.push({
+        name: meal.name,
+        category: meal.category,
+        restaurantId: bombayBistro.id,
+        servedOn: menu.date,
+      });
+    }
+  }
+  
+  let districtOneMenus = await fetchDistrictOneMeals();
+  let districtOne = (
+    await db
+      .select()
+      .from(restaurants)
+      .where(eq(restaurants.name, "District One"))
+      .limit(1)
+  )[0]!;
+  for (const menu of districtOneMenus) {
+    for (const meal of menu.meals) {
+      newMeals.push({
+        name: meal.name,
+        category: meal.category,
+        restaurantId: districtOne.id,
         servedOn: menu.date,
       });
     }
@@ -83,3 +120,33 @@ export async function fetchWorldOfFoodRSS(): Promise<MenuDay[]> {
   const rss = await response.text();
   return parseWorldOfFoodRSS(rss);
 }
+
+export async function fetchBombayBistroMeals(): Promise<MenuDay[]> {
+  const url = "https://lindholmen.restaurangbombay.se/lunch/";
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch page: ${response.status} ${response.statusText}`,
+    );
+  }
+  const html = await response.text();
+  const menuDays = parseBombayBistroMenuDays(html, new Date());
+  return menuDays;
+}
+
+export async function fetchDistrictOneMeals(): Promise<MenuDay[]> {
+  const url = "https://districtone.se/lunch.html";
+  const response = await fetch(url);
+  
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch page: ${response.status} ${response.statusText}`,
+    );
+  }
+  
+  const html = await response.text();
+  const menuDays = parseDistrictOneMenuDays(html, new Date());
+  return menuDays;
+}
+
+
