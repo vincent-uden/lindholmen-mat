@@ -43,43 +43,43 @@ export async function fetchMealsOfTheWeek(db: MenuDb) {
       });
     }
   }
-  let bombayBistroMenus = await fetchBombayBistroMeals();
-  let bombayBistro = (
-    await db
-      .select()
-      .from(restaurants)
-      .where(eq(restaurants.name, "Bombay Bistro"))
-      .limit(1)
-  )[0]!;
-  for (const menu of bombayBistroMenus) {
-    for (const meal of menu.meals) {
-      newMeals.push({
-        name: meal.name,
-        category: meal.category,
-        restaurantId: bombayBistro.id,
-        servedOn: menu.date,
-      });
-    }
-  }
-  
-  let districtOneMenus = await fetchDistrictOneMeals();
-  let districtOne = (
-    await db
-      .select()
-      .from(restaurants)
-      .where(eq(restaurants.name, "District One"))
-      .limit(1)
-  )[0]!;
-  for (const menu of districtOneMenus) {
-    for (const meal of menu.meals) {
-      newMeals.push({
-        name: meal.name,
-        category: meal.category,
-        restaurantId: districtOne.id,
-        servedOn: menu.date,
-      });
-    }
-  }
+  // let bombayBistroMenus = await fetchBombayBistroMeals();
+  // let bombayBistro = (
+  //   await db
+  //     .select()
+  //     .from(restaurants)
+  //     .where(eq(restaurants.name, "Bombay Bistro"))
+  //     .limit(1)
+  // )[0]!;
+  // for (const menu of bombayBistroMenus) {
+  //   for (const meal of menu.meals) {
+  //     newMeals.push({
+  //       name: meal.name,
+  //       category: meal.category,
+  //       restaurantId: bombayBistro.id,
+  //       servedOn: menu.date,
+  //     });
+  //   }
+  // }
+  // 
+  // let districtOneMenus = await fetchDistrictOneMeals();
+  // let districtOne = (
+  //   await db
+  //     .select()
+  //     .from(restaurants)
+  //     .where(eq(restaurants.name, "District One"))
+  //     .limit(1)
+  // )[0]!;
+  // for (const menu of districtOneMenus) {
+  //   for (const meal of menu.meals) {
+  //     newMeals.push({
+  //       name: meal.name,
+  //       category: meal.category,
+  //       restaurantId: districtOne.id,
+  //       servedOn: menu.date,
+  //     });
+  //   }
+  // }
 
   await db.insert(meals).values(newMeals);
 }
@@ -137,13 +137,13 @@ export async function fetchBombayBistroMeals(): Promise<MenuDay[]> {
 export async function fetchDistrictOneMeals(): Promise<MenuDay[]> {
   const url = "https://districtone.se/lunch.html";
   const response = await fetch(url);
-  
+
   if (!response.ok) {
     throw new Error(
       `Failed to fetch page: ${response.status} ${response.statusText}`,
     );
   }
-  
+
   const html = await response.text();
   const menuDays = parseDistrictOneMenuDays(html, new Date());
   return menuDays;
