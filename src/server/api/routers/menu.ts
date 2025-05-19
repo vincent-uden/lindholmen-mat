@@ -60,6 +60,7 @@ export const menuRouter = createTRPCRouter({
       const endOfDay = new Date(input.date);
       endOfDay.setDate(endOfDay.getDate() + 1);
 
+      let shops = await ctx.db.select().from(restaurants);
       let result = await ctx.db
         .select({
           restaurantId: restaurants.id,
@@ -71,8 +72,12 @@ export const menuRouter = createTRPCRouter({
         .where(
           and(gte(meals.servedOn, startOfDay), lt(meals.servedOn, endOfDay)),
         );
-      if (result.length === 0) {
-        fetchMealsOfTheWeek(ctx.db);
+      let restaurantIds: any = {};
+      for (const r of result) {
+        restaurantIds[r.restaurantId] = true;
+      }
+      if (Object.keys(restaurantIds).length !== shops.length) {
+        await fetchMealsOfTheWeek(ctx.db);
         result = await ctx.db
           .select({
             restaurantId: restaurants.id,
