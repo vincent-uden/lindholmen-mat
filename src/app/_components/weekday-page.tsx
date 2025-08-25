@@ -1,10 +1,8 @@
 import { getMenuForDay } from "~/lib/queries/menu-queries";
-import { getRecommendations } from "~/lib/queries/recommendation-queries";
 import type { GroupedRestaurant, MenuDay } from "~/lib/types";
 
 import { ThemeToggle } from "./theme-toggle";
 import { Separator } from "~/components/ui/separator";
-import Fuse from "fuse.js";
 
 interface WeekdayPageProps {
   weekday: "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
@@ -16,9 +14,6 @@ export default async function WeekdayPage({ weekday }: WeekdayPageProps) {
 
   // Fetch menu data for the target date
   const meals = await getMenuForDay(targetDate);
-
-  // Get recommendations based on the meals
-  const recommendations = await getRecommendations(meals);
 
   // Filter restaurants that have menus for the selected date
   let restaurantsWithMenus: { name: string; menuDay: MenuDay }[] = [];
@@ -87,11 +82,6 @@ export default async function WeekdayPage({ weekday }: WeekdayPageProps) {
         />
 
         <div className="h-4" />
-        <p className="text-gray-500 text-sm dark:text-gray-400 italic">
-          <span className="text-green-500 dark:text-green-400">Green</span>{" "}
-          outlines shows meals that are more likely to be of interest.
-        </p>
-        <div className="h-4" />
 
         {/* No results message */}
         {restaurantsWithMenus.length === 0 && (
@@ -133,18 +123,10 @@ export default async function WeekdayPage({ weekday }: WeekdayPageProps) {
                           {restaurant.menuDay.meals
                             .filter((meal) => meal.category === category)
                             .map((meal, index) => {
-                              const recommendationStyling =
-                                getRecommendationStyling(
-                                  meal.name,
-                                  recommendations,
-                                );
                               return (
                                 <div
                                   key={index}
-                                  className={
-                                    "rounded-md bg-gray-50 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800" +
-                                    recommendationStyling
-                                  }
+                                  className="rounded-md bg-gray-50 px-3 py-2 text-sm transition-colors hover:bg-gray-100 dark:bg-gray-900 dark:hover:bg-gray-800"
                                 >
                                   <p>{meal.name}</p>
                                 </div>
@@ -220,28 +202,6 @@ function getDateForWeekday(weekday: string): Date {
   targetDate.setDate(today.getDate() + diff);
 
   return targetDate;
-}
-
-// Helper function to get recommendation styling
-function getRecommendationStyling(
-  mealName: string,
-  recommendations: any,
-): string {
-  const recommendationSearch = new Fuse(recommendations.recommendations ?? [], {
-    keys: ["name"],
-    includeScore: true,
-  });
-
-  let matches = recommendationSearch.search(mealName);
-  if (matches.length > 0) {
-    let r = matches[0]!;
-    if ((r.score ?? 0.0) < 0.9) {
-      if ((r.item as any).tastyness > 7) {
-        return " border border-2 border-green-300 dark:border-green-700";
-      }
-    }
-  }
-  return "";
 }
 
 // Helper function to get unique categories from a day's meals

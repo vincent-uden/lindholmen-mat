@@ -1,27 +1,11 @@
-import { redirect } from "next/navigation";
+import { getMenuForWeek } from "~/lib/queries/menu-queries";
+import { MenuPage } from "./_components/menu-page";
+
+// ISR - revalidate every hour
+export const revalidate = 3600;
 
 export default async function Home() {
-  // Calculate the current work day and redirect to it
-  const today = new Date();
-  const dayOfWeek = today.getDay();
+  const weekData = await getMenuForWeek();
 
-  // Map day numbers to weekday names
-  const weekdays = [
-    "sunday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-  ];
-  let targetWeekday = weekdays[dayOfWeek];
-
-  // If it's Saturday or Sunday, redirect to Friday
-  if (dayOfWeek === 6 || dayOfWeek === 0) {
-    targetWeekday = "friday";
-  }
-
-  // Redirect to the weekday route
-  redirect(`/${targetWeekday}`);
+  return <MenuPage weekData={weekData} />;
 }
