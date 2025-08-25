@@ -3,8 +3,6 @@ import "~/styles/globals.css";
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 
-import { ThemeProvider } from "next-themes";
-import { TRPCReactProvider } from "~/trpc/react";
 import MyThemeProvider from "~/components/theme-provider";
 import { Footer } from "./_components/footer";
 
@@ -23,11 +21,9 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${geist.variable}`}>
+    <html lang="en" className={`${geist.variable}`} suppressHydrationWarning>
       <body>
-        <MyThemeProvider>
-          <TRPCReactProvider>{children}</TRPCReactProvider>
-        </MyThemeProvider>
+        <MyThemeProvider>{children}</MyThemeProvider>
         <Footer />
       </body>
     </html>
