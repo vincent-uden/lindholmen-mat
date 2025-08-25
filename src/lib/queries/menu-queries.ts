@@ -11,16 +11,31 @@ import type {
 import { db } from "~/server/db";
 import { meals, restaurants } from "~/server/db/schema";
 
-export const getMenuForDay = cache(
-  async (date: Date): Promise<GroupedRestaurant[]> => {
-    // The server might be on a different timezone, thus we respect the front
-    // ends definition of start and end of a day
-    const startOfDay = date;
-    const endOfDay = new Date(date);
-    endOfDay.setDate(endOfDay.getDate() + 1);
+// Cache the entire week's data to share across all date routes
+export const getMenuForWeek = cache(async (): Promise<GroupedRestaurant[]> => {
+  // Get the start and end of the current week (Monday to Friday)
+  const { monday, friday } = getCurrentWeekBounds();
 
-    let shops = await db.select().from(restaurants);
-    let result = await db
+  let shops = await db.select().from(restaurants);
+  let result = await db
+    .select({
+      restaurantId: restaurants.id,
+      restaurantName: restaurants.name,
+      meal: meals,
+    })
+    .from(meals)
+    .innerJoin(restaurants, eq(restaurants.id, meals.restaurantId))
+    .where(and(gte(meals.servedOn, monday), lt(meals.servedOn, friday)));
+
+  let restaurantIds: any = {};
+  for (const r of result) {
+    restaurantIds[r.restaurantId] = true;
+  }
+
+  // If we don't have data for all restaurants, fetch fresh data
+  if (Object.keys(restaurantIds).length !== shops.length) {
+    await fetchMealsOfTheWeek(db);
+    result = await db
       .select({
         restaurantId: restaurants.id,
         restaurantName: restaurants.name,
@@ -28,34 +43,51 @@ export const getMenuForDay = cache(
       })
       .from(meals)
       .innerJoin(restaurants, eq(restaurants.id, meals.restaurantId))
-      .where(
-        and(gte(meals.servedOn, startOfDay), lt(meals.servedOn, endOfDay)),
-      );
+      .where(and(gte(meals.servedOn, monday), lt(meals.servedOn, friday)));
+  }
 
-    let restaurantIds: any = {};
-    for (const r of result) {
-      restaurantIds[r.restaurantId] = true;
-    }
+  let grouped = groupMealsByRestaurant(result);
+  return grouped;
+});
 
-    if (Object.keys(restaurantIds).length !== shops.length) {
-      await fetchMealsOfTheWeek(db);
-      result = await db
-        .select({
-          restaurantId: restaurants.id,
-          restaurantName: restaurants.name,
-          meal: meals,
-        })
-        .from(meals)
-        .innerJoin(restaurants, eq(restaurants.id, meals.restaurantId))
-        .where(
-          and(gte(meals.servedOn, startOfDay), lt(meals.servedOn, endOfDay)),
-        );
-    }
+export const getMenuForDay = cache(
+  async (date: Date): Promise<GroupedRestaurant[]> => {
+    // Get the entire week's data (cached)
+    const weekData = await getMenuForWeek();
 
-    let grouped = groupMealsByRestaurant(result);
-    return grouped;
+    // Filter to the specific date
+    const filteredData = weekData
+      .map((restaurant) => ({
+        ...restaurant,
+        days: restaurant.days.filter((day) => {
+          return (
+            day.date.getFullYear() === date.getFullYear() &&
+            day.date.getMonth() === date.getMonth() &&
+            day.date.getDate() === date.getDate()
+          );
+        }),
+      }))
+      .filter((restaurant) => restaurant.days.length > 0);
+
+    return filteredData;
   },
 );
+
+// Helper function to get current week bounds
+function getCurrentWeekBounds() {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+  const monday = new Date(today);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(today.getDate() + diffToMonday);
+
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 5); // End of Friday (start of Saturday)
+
+  return { monday, friday };
+}
 
 function groupMealsByRestaurant(results: ResultRecord[]): GroupedRestaurant[] {
   // A map to hold restaurant grouping information.

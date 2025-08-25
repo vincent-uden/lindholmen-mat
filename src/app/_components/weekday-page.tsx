@@ -1,29 +1,24 @@
-import { Separator } from "~/components/ui/separator";
 import { getMenuForDay } from "~/lib/queries/menu-queries";
-import {
-  getRecommendations,
-  type MenuRecommendation,
-} from "~/lib/queries/recommendation-queries";
+import { getRecommendations } from "~/lib/queries/recommendation-queries";
 import type { GroupedRestaurant, MenuDay } from "~/lib/types";
-import { DateSelector } from "./date-selector";
+
 import { ThemeToggle } from "./theme-toggle";
+import { Separator } from "~/components/ui/separator";
 import Fuse from "fuse.js";
 
-interface LandingServerProps {
-  selectedDate: Date;
+interface WeekdayPageProps {
+  weekday: "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
 }
 
-export default async function LandingServer({
-  selectedDate,
-}: LandingServerProps) {
-  // Fetch menu data for the selected date
-  const meals = await getMenuForDay(selectedDate);
+export default async function WeekdayPage({ weekday }: WeekdayPageProps) {
+  // Calculate the date for the specified weekday of the current week
+  const targetDate = getDateForWeekday(weekday);
+
+  // Fetch menu data for the target date
+  const meals = await getMenuForDay(targetDate);
 
   // Get recommendations based on the meals
   const recommendations = await getRecommendations(meals);
-
-  // Get all weekdays for the date selector
-  const allDates = getWeekdaysOfCurrentWeek();
 
   // Filter restaurants that have menus for the selected date
   let restaurantsWithMenus: { name: string; menuDay: MenuDay }[] = [];
@@ -33,9 +28,9 @@ export default async function LandingServer({
         // Find the menu day that matches the selected date
         const menuDay = restaurant.days.find((day) => {
           return (
-            day.date.getFullYear() === selectedDate.getFullYear() &&
-            day.date.getMonth() === selectedDate.getMonth() &&
-            day.date.getDate() === selectedDate.getDate()
+            day.date.getFullYear() === targetDate.getFullYear() &&
+            day.date.getMonth() === targetDate.getMonth() &&
+            day.date.getDate() === targetDate.getDate()
           );
         });
 
@@ -86,7 +81,10 @@ export default async function LandingServer({
         </div>
 
         {/* Date selector */}
-        <DateSelector dates={allDates} selectedDate={selectedDate} />
+        <WeekdaySelector
+          weekdays={["monday", "tuesday", "wednesday", "thursday", "friday"]}
+          selectedWeekday={weekday}
+        />
 
         <div className="h-4" />
         <p className="text-gray-500 text-sm dark:text-gray-400 italic">
@@ -100,7 +98,7 @@ export default async function LandingServer({
           <div className="rounded-lg border bg-white p-8 text-center dark:bg-gray-950">
             <h3 className="mb-2 font-medium text-lg">No menus available</h3>
             <p className="mb-4 text-gray-500 dark:text-gray-400">
-              Try selecting a different date to see available menus.
+              Try selecting a different day to see available menus.
             </p>
           </div>
         )}
@@ -166,10 +164,68 @@ export default async function LandingServer({
   );
 }
 
+// Helper component for weekday navigation
+function WeekdaySelector({
+  weekdays,
+  selectedWeekday,
+}: {
+  weekdays: string[];
+  selectedWeekday: string;
+}) {
+  return (
+    <div className="overflow-x-auto pb-2">
+      <div className="flex gap-2">
+        {weekdays.map((day) => {
+          const isSelected = selectedWeekday === day;
+          return (
+            <a
+              key={day}
+              href={`/${day}`}
+              className={`inline-block h-9 shrink-0 rounded-md px-4 py-2 text-sm font-medium transition-colors ${
+                isSelected
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                  : "bg-white border border-gray-200 text-gray-900 hover:bg-gray-100 dark:bg-gray-950 dark:border-gray-800 dark:text-gray-100 dark:hover:bg-gray-800"
+              }`}
+            >
+              {day.charAt(0).toUpperCase() + day.slice(1)}
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Helper function to get the date for a specific weekday of the current week
+function getDateForWeekday(weekday: string): Date {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const weekdayIndex = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ].indexOf(weekday);
+
+  if (weekdayIndex === -1) {
+    throw new Error(`Invalid weekday: ${weekday}`);
+  }
+
+  const diff = weekdayIndex - dayOfWeek;
+  const targetDate = new Date(today);
+  targetDate.setHours(0, 0, 0, 0);
+  targetDate.setDate(today.getDate() + diff);
+
+  return targetDate;
+}
+
 // Helper function to get recommendation styling
 function getRecommendationStyling(
   mealName: string,
-  recommendations: MenuRecommendation,
+  recommendations: any,
 ): string {
   const recommendationSearch = new Fuse(recommendations.recommendations ?? [], {
     keys: ["name"],
@@ -180,7 +236,7 @@ function getRecommendationStyling(
   if (matches.length > 0) {
     let r = matches[0]!;
     if ((r.score ?? 0.0) < 0.9) {
-      if (r.item.tastyness > 7) {
+      if ((r.item as any).tastyness > 7) {
         return " border border-2 border-green-300 dark:border-green-700";
       }
     }
@@ -192,28 +248,4 @@ function getRecommendationStyling(
 function getCategoriesFromDay(day: MenuDay): string[] {
   const categories = day.meals.map((meal) => meal.category);
   return [...new Set(categories)];
-}
-
-// Helper function to get weekdays of current week
-function getWeekdaysOfCurrentWeek(): Date[] {
-  const today = new Date();
-  const dayOfWeek = today.getDay();
-  // Calculate how many days to subtract/add to get Monday.
-  // If today is Sunday (0), then we want the following Monday (i.e. diff = 1).
-  const diffToMonday = dayOfWeek === 0 ? 1 : 1 - dayOfWeek;
-
-  // Get Monday of the current week.
-  const monday = new Date(today);
-  monday.setHours(0, 0, 0, 0);
-  monday.setDate(today.getDate() + diffToMonday);
-
-  // Create an array of Date objects for Monday to Friday.
-  const weekdays: Date[] = [];
-  for (let i = 0; i < 5; i++) {
-    const day = new Date(monday);
-    day.setDate(monday.getDate() + i);
-    weekdays.push(day);
-  }
-
-  return weekdays;
 }

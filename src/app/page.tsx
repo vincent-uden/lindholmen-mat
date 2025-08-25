@@ -1,34 +1,27 @@
-import LandingServer from "./_components/landing-server";
+import { redirect } from "next/navigation";
 
-export const revalidate = 3600;
+export default async function Home() {
+  // Calculate the current work day and redirect to it
+  const today = new Date();
+  const dayOfWeek = today.getDay();
 
-interface HomeProps {
-  searchParams: Promise<{ date?: string }>;
-}
+  // Map day numbers to weekday names
+  const weekdays = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ];
+  let targetWeekday = weekdays[dayOfWeek];
 
-export default async function Home({ searchParams }: HomeProps) {
-  const params = await searchParams;
-
-  // Get the selected date from search params or default to today (adjusted for weekends)
-  let selectedDate: Date;
-  if (params.date) {
-    selectedDate = new Date(params.date);
-  } else {
-    const initialDate = new Date();
-    initialDate.setHours(0, 0, 0, 0);
-
-    // Check if today is Saturday (6) or Sunday (0)
-    const dayOfWeek = initialDate.getDay();
-
-    // If it's Saturday, subtract one day; if it's Sunday, subtract two days.
-    if (dayOfWeek === 6) {
-      initialDate.setDate(initialDate.getDate() - 1);
-    } else if (dayOfWeek === 0) {
-      initialDate.setDate(initialDate.getDate() - 2);
-    }
-
-    selectedDate = initialDate;
+  // If it's Saturday or Sunday, redirect to Friday
+  if (dayOfWeek === 6 || dayOfWeek === 0) {
+    targetWeekday = "friday";
   }
 
-  return <LandingServer selectedDate={selectedDate} />;
+  // Redirect to the weekday route
+  redirect(`/${targetWeekday}`);
 }
