@@ -1,19 +1,34 @@
-import Link from "next/link";
-
-import { LatestPost } from "~/app/_components/post";
-import { HydrateClient, api } from "~/trpc/server";
-import Landing from "./_components/landing";
+import LandingServer from "./_components/landing-server";
 
 export const revalidate = 3600;
 
-export default async function Home() {
-  const hello = await api.post.hello({ text: "from tRPC" });
+interface HomeProps {
+  searchParams: Promise<{ date?: string }>;
+}
 
-  void api.post.getLatest.prefetch();
+export default async function Home({ searchParams }: HomeProps) {
+  const params = await searchParams;
 
-  return (
-    <HydrateClient>
-      <Landing />
-    </HydrateClient>
-  );
+  // Get the selected date from search params or default to today (adjusted for weekends)
+  let selectedDate: Date;
+  if (params.date) {
+    selectedDate = new Date(params.date);
+  } else {
+    const initialDate = new Date();
+    initialDate.setHours(0, 0, 0, 0);
+
+    // Check if today is Saturday (6) or Sunday (0)
+    const dayOfWeek = initialDate.getDay();
+
+    // If it's Saturday, subtract one day; if it's Sunday, subtract two days.
+    if (dayOfWeek === 6) {
+      initialDate.setDate(initialDate.getDate() - 1);
+    } else if (dayOfWeek === 0) {
+      initialDate.setDate(initialDate.getDate() - 2);
+    }
+
+    selectedDate = initialDate;
+  }
+
+  return <LandingServer selectedDate={selectedDate} />;
 }
