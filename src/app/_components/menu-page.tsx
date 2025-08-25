@@ -76,11 +76,10 @@ export function MenuPage({ weekData }: MenuPageProps) {
                     key={date.toISOString()}
                     variant={isSelected ? "default" : "outline"}
                     size="sm"
-                    className={`h-9 shrink-0 ${
-                      isSelected
-                        ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                        : "bg-white dark:bg-gray-950"
-                    }`}
+                    className={`h-9 shrink-0 ${isSelected
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      : "bg-white dark:bg-gray-950"
+                      }`}
                     onClick={() => setSelectedDate(date)}
                   >
                     <span className="font-medium">{format(date, "EEE")}</span>
@@ -108,15 +107,16 @@ export function MenuPage({ weekData }: MenuPageProps) {
                 <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
                   {restaurant.restaurantName}
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+                <div className="flex flex-wrap gap-2">
                   {restaurant.days[0]?.meals.map((meal, index) => (
                     <div
                       key={index}
-                      className="rounded-md bg-gray-50 p-2 text-sm dark:bg-gray-700"
+                      className="rounded-md bg-gray-50 p-4 text-sm dark:bg-gray-700 max-w-xs min-w-[300px] flex-1 flex flex-col justify-stretch border border-1 border-gray-100 dark:border-gray-800"
                     >
                       <h3 className="font-medium text-gray-900 dark:text-white leading-tight">
                         {meal.name}
                       </h3>
+                      <div className="flex-grow" />
                       {meal.category && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           {meal.category}
